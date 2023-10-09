@@ -118,25 +118,29 @@ class OTPPlugin : FlutterPlugin, MethodCallHandler, PluginRegistry.ActivityResul
     }
 
     override fun onActivityResult(requestCode: Int, resultCode: Int, data: Intent?): Boolean {
-        when (requestCode) {
-            smsConsentRequest ->
-                // Obtain the phone number from the result
-                if (resultCode == Activity.RESULT_OK && data != null) {
-                    // Get SMS message content
-                    val message = data.getStringExtra(SmsRetriever.EXTRA_SMS_MESSAGE)
-                    lastResult?.success(message)
+        try {
+            when (requestCode) {
+                smsConsentRequest ->
+                    // Obtain the phone number from the result
+                    if (resultCode == Activity.RESULT_OK && data != null) {
+                        // Get SMS message content
+                        val message = data.getStringExtra(SmsRetriever.EXTRA_SMS_MESSAGE)
+                        lastResult?.success(message)
+                        lastResult = null
+                    } else {
+                        // Consent denied. User can type OTC manually.
+                    }
+                credentialPickerRequest -> if (resultCode == Activity.RESULT_OK && data != null) {
+                    val phoneNumber =
+                        Identity.getSignInClient(context!!).getPhoneNumberFromIntent(data)
+                    lastResult?.success(phoneNumber)
                     lastResult = null
-                } else {
-                    // Consent denied. User can type OTC manually.
                 }
-            credentialPickerRequest -> if (resultCode == Activity.RESULT_OK && data != null) {
-                val phoneNumber =
-                    Identity.getSignInClient(context!!).getPhoneNumberFromIntent(data)
-                lastResult?.success(phoneNumber)
-                lastResult = null
             }
+            return true
+        } catch (e: Exception) {
+            return false
         }
-        return true
     }
 
     override fun onAttachedToActivity(binding: ActivityPluginBinding) {
